@@ -4,12 +4,15 @@
 
 #define ROT1_IN1 6
 #define ROT1_IN2 5
+#define ROT2_IN1 7
+#define ROT2_IN2 8
 
 #define ROTARYSTEPS 2
 #define ROTARYMIN -128
 #define ROTARYMAX 127
 
 int rot1_addr = 0;
+int rot2_addr = 5;
 
 int ioSelect = 2;
 int clockPulse = 3;
@@ -31,6 +34,10 @@ int btn4;
 int btn5;
 int btn6;
 int btn7;
+int btn8;
+int btn9;
+int btn10;
+int btn11;
 
 int x;
 int y;
@@ -41,8 +48,10 @@ int ry;
 byte switchVar = 0;
 
 RotaryEncoder encoder1(ROT1_IN1, ROT1_IN2, RotaryEncoder::LatchMode::TWO03);
+RotaryEncoder encoder2(ROT2_IN1, ROT2_IN2, RotaryEncoder::LatchMode::TWO03);
 // Last known rotary position.
 int lastPos1 = 0;
+int lastPos2 = 0;
 
 void setup() {
   // put your setup code here, to run once:
@@ -54,18 +63,25 @@ void setup() {
   pinMode(yAxis, INPUT);
   pinMode(rxAxis, INPUT);
   pinMode(ryAxis, INPUT);
+  pinMode(9, OUTPUT);
+  pinMode(10, OUTPUT);
+  pinMode(16, OUTPUT);
 
   EEPROM.get(rot1_addr, lastPos1);
+  EEPROM.get(rot2_addr, lastPos2);
   
   encoder1.setPosition(lastPos1 / ROTARYSTEPS);
-  //Serial.begin(9600);
+  encoder2.setPosition(lastPos2 / ROTARYSTEPS);
+  //Serial.begin(115200);
   
 }
 
 void loop() {
   encoder1.tick();
+  encoder2.tick();
   int newPos1 = encoder1.getPosition() * ROTARYSTEPS;
-  byte dataIn = 0;
+  int newPos2 = encoder2.getPosition() * ROTARYSTEPS;
+  uint16_t dataIn = 0;
   digitalWrite(ioSelect, 0);
   digitalWrite(clockPulse, 0);
   digitalWrite(clockPulse, 1);
@@ -90,7 +106,21 @@ void loop() {
     EEPROM.put(rot1_addr, lastPos1);
   } // if
 
-  for(j = 0; j < 8; j++) {
+  if (newPos2 < ROTARYMIN) {
+    encoder2.setPosition(ROTARYMIN / ROTARYSTEPS);
+    newPos2 = ROTARYMIN;
+
+  } else if (newPos2 > ROTARYMAX) {
+    encoder2.setPosition(ROTARYMAX / ROTARYSTEPS);
+    newPos2 = ROTARYMAX;
+  } // if
+
+  if (lastPos2 != newPos2) {
+    lastPos2 = newPos2;
+    EEPROM.put(rot2_addr, lastPos2);
+  } // if
+
+  for(j = 0; j < 16; j++) {
     value = digitalRead(dataOut);
 
     switch(j) {
@@ -118,6 +148,18 @@ void loop() {
       case 7:
         btn7 = value;
         break;
+      case 8:
+        btn8 = value;
+        break;
+      case 9:
+        btn9 = value;
+        break;
+      case 10:
+        btn10 = value;
+        break;
+      case 11:
+        btn11 = value;
+        break;
     }
 
     if(value) {
@@ -132,28 +174,29 @@ void loop() {
     switchVar = dataIn;
   }
   
-  if(x == 507) {
+  if(x >= 500 && x <= 512) {
     Gamepad.xAxis(0);
   }else{
     Gamepad.xAxis(map(x,0, 1023, -32768, 32767));
   }
-  if(rx >= 505 && rx <= 507) {
+  if(rx >= 500 && rx <= 512) {
     Gamepad.rxAxis(0);
   }else{
     Gamepad.rxAxis(map(rx,0, 1023, -32768, 32767));
   }
-  if(y == 517) {
+  if(y >= 500 && y <= 520) {
     Gamepad.yAxis(0);
   }else{
     Gamepad.yAxis(map(y,0, 1023, -32768, 32767));
   }
-  if(ry <= 514) {
+  if(ry >= 500 && ry <= 520) {
     Gamepad.ryAxis(0);
   }else{
     Gamepad.ryAxis(map(ry,0, 1023, -32768, 32767));
   }
 
   Gamepad.zAxis(lastPos1);
+  Gamepad.rzAxis(lastPos2);
 
   if(btn0) {
     Gamepad.press(1);
@@ -197,7 +240,32 @@ void loop() {
     Gamepad.release(9);
     Gamepad.press(10);
   }
+  if(btn8) {
+    Gamepad.press(11);
+    Gamepad.release(12);
+  } else {
+    Gamepad.release(11);
+    Gamepad.press(12);
+  }
+  if(btn9) {
+    Gamepad.press(13);
+  } else {
+    Gamepad.release(13);
+  }
+  if(btn10) {
+    Gamepad.press(14);
+    Gamepad.release(15);
+  } else {
+    Gamepad.release(14);
+    Gamepad.press(15);
+  }
+  if(btn11) {
+    Gamepad.press(16);
+  } else {
+    Gamepad.release(16);
+  }
   Gamepad.write();
+
   delay(1);
 
 }

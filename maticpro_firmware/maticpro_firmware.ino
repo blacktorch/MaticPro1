@@ -8,7 +8,7 @@
 #define ROT2_IN1 7
 #define ROT2_IN2 8
 
-#define ROTARYSTEPS 2
+#define ROTARYSTEPS 1
 #define ROTARYMIN -128
 #define ROTARYMAX 127
 
@@ -66,7 +66,12 @@ int32_t forces[2] = {0};
 
 void setup() {
   // put your setup code here, to run once:
-  //Gamepad.begin();
+  
+  mygains[0].totalGain = 100;//0-100
+  mygains[0].springGain = 100;//0-100
+  //enable gains REQUIRED
+  Joystick.setGains(mygains);
+  Joystick.begin(false);
   pinMode(ioSelect, OUTPUT);
   pinMode(clockPulse, OUTPUT);
   pinMode(dataOut, INPUT);
@@ -75,34 +80,27 @@ void setup() {
   pinMode(rxAxis, INPUT);
   pinMode(ryAxis, INPUT);
   pinMode(9, OUTPUT);
-  pinMode(10, OUTPUT);
-  pinMode(16, OUTPUT);
 
   EEPROM.get(rot1_addr, lastPos1);
   EEPROM.get(rot2_addr, lastPos2);
   
   encoder1.setPosition(lastPos1 / ROTARYSTEPS);
   encoder2.setPosition(lastPos2 / ROTARYSTEPS);
+  
   Joystick.setXAxisRange(-512, 511);
   Joystick.setYAxisRange(-512, 511);
   Joystick.setZAxisRange(-512, 511);
   Joystick.setRxAxisRange(-512, 511);
-  Joystick.setRyAxisRange(-512, 511);
-  Joystick.setRzAxisRange(-512, 511);
-  mygains[0].totalGain = 100;//0-100
-  mygains[0].springGain = 100;//0-100
-    //enable gains REQUIRED
-  Joystick.setGains(mygains);
-  Joystick.begin();
-  //Serial.begin(115200);
+  Joystick.setRyAxisRange(-128, 127);
+  Joystick.setRzAxisRange(-128, 127);
+
+ // Serial.begin(115200);
   
 }
 
 void loop() {
   encoder1.tick();
   encoder2.tick();
-  myeffectparams[0].springMaxPosition = 1023;
-  myeffectparams[0].springPosition = 1023;//0-1023
   int newPos1 = encoder1.getPosition() * ROTARYSTEPS;
   int newPos2 = encoder2.getPosition() * ROTARYSTEPS;
   uint16_t dataIn = 0;
@@ -220,8 +218,8 @@ void loop() {
     Joystick.setRxAxis(map(ry, 0, 1023, -512, 511));
   }
 
-  Joystick.setRyAxis(map(lastPos1, -128, 127, -512, 511));
-  Joystick.setRzAxis(map(lastPos2, -128, 127, -512, 511));
+  Joystick.setRyAxis(lastPos1);
+  Joystick.setRzAxis(lastPos2);
 
   if(btn0) {
     Joystick.pressButton(0);
@@ -289,16 +287,15 @@ void loop() {
   } else {
     Joystick.releaseButton(15);
   }
-  //Gamepad.write();
+  Joystick.sendState();
+
+  myeffectparams[0].springMaxPosition = 1023;
+  myeffectparams[0].springPosition = 1023;//0-1023
   Joystick.setEffectParams(myeffectparams);
   Joystick.getForce(forces);
   if(forces[0] > 0){
-    //digitalWrite(6,LOW);
-    //digitalWrite(7,HIGH);
     analogWrite(9,abs(forces[0]));
   }else{
-    //digitalWrite(6,HIGH);
-    //digitalWrite(7,LOW);
     analogWrite(9,abs(forces[0]));
   }
 

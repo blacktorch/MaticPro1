@@ -1,5 +1,6 @@
 #include <EEPROM.h>
-#include "HID-Project.h"
+//#include "HID-Project.h"
+#include "Joystick.h"
 #include <RotaryEncoder.h>
 
 #define ROT1_IN1 6
@@ -53,9 +54,19 @@ RotaryEncoder encoder2(ROT2_IN1, ROT2_IN2, RotaryEncoder::LatchMode::TWO03);
 int lastPos1 = 0;
 int lastPos2 = 0;
 
+Joystick_ Joystick(JOYSTICK_DEFAULT_REPORT_ID, 
+  JOYSTICK_TYPE_JOYSTICK, 16, 0,
+  true, true, true, //X,Y,Z
+  true, true, true,//Rx,Ry,Rz
+  false, false, false, false, false);
+
+Gains mygains[2];
+EffectParams myeffectparams[2];
+int32_t forces[2] = {0};
+
 void setup() {
   // put your setup code here, to run once:
-  Gamepad.begin();
+  //Gamepad.begin();
   pinMode(ioSelect, OUTPUT);
   pinMode(clockPulse, OUTPUT);
   pinMode(dataOut, INPUT);
@@ -72,6 +83,17 @@ void setup() {
   
   encoder1.setPosition(lastPos1 / ROTARYSTEPS);
   encoder2.setPosition(lastPos2 / ROTARYSTEPS);
+  Joystick.setXAxisRange(-512, 511);
+  Joystick.setYAxisRange(-512, 511);
+  Joystick.setZAxisRange(-512, 511);
+  Joystick.setRxAxisRange(-512, 511);
+  Joystick.setRyAxisRange(-512, 511);
+  Joystick.setRzAxisRange(-512, 511);
+  mygains[0].totalGain = 100;//0-100
+  mygains[0].springGain = 100;//0-100
+    //enable gains REQUIRED
+  Joystick.setGains(mygains);
+  Joystick.begin();
   //Serial.begin(115200);
   
 }
@@ -79,6 +101,8 @@ void setup() {
 void loop() {
   encoder1.tick();
   encoder2.tick();
+  myeffectparams[0].springMaxPosition = 1023;
+  myeffectparams[0].springPosition = 1023;//0-1023
   int newPos1 = encoder1.getPosition() * ROTARYSTEPS;
   int newPos2 = encoder2.getPosition() * ROTARYSTEPS;
   uint16_t dataIn = 0;
@@ -175,96 +199,108 @@ void loop() {
   }
   
   if(x >= 500 && x <= 512) {
-    Gamepad.xAxis(0);
+    Joystick.setXAxis(0);
   }else{
-    Gamepad.xAxis(map(x,0, 1023, -32768, 32767));
-  }
-  if(rx >= 500 && rx <= 512) {
-    Gamepad.rxAxis(0);
-  }else{
-    Gamepad.rxAxis(map(rx,0, 1023, -32768, 32767));
+    Joystick.setXAxis(map(x, 0, 1023, -512, 511));
   }
   if(y >= 500 && y <= 520) {
-    Gamepad.yAxis(0);
+    Joystick.setYAxis(0);
   }else{
-    Gamepad.yAxis(map(y,0, 1023, -32768, 32767));
+    Joystick.setYAxis(map(y, 0, 1023, -512, 511));
   }
-  if(ry >= 500 && ry <= 520) {
-    Gamepad.ryAxis(0);
+  if(rx >= 500 && rx <= 512) {
+    Joystick.setZAxis(0);
   }else{
-    Gamepad.ryAxis(map(ry,0, 1023, -32768, 32767));
+    Joystick.setZAxis(map(rx, 0, 1023, -512, 511));
+  }
+  
+  if(ry >= 500 && ry <= 520) {
+    Joystick.setRxAxis(0);
+  }else{
+    Joystick.setRxAxis(map(ry, 0, 1023, -512, 511));
   }
 
-  Gamepad.zAxis(lastPos1);
-  Gamepad.rzAxis(lastPos2);
+  Joystick.setRyAxis(map(lastPos1, -128, 127, -512, 511));
+  Joystick.setRzAxis(map(lastPos2, -128, 127, -512, 511));
 
   if(btn0) {
-    Gamepad.press(1);
+    Joystick.pressButton(0);
   } else {
-    Gamepad.release(1);
+    Joystick.releaseButton(0);
   }
   if(btn1) {
-    Gamepad.press(2);
+    Joystick.pressButton(1);
   } else {
-    Gamepad.release(2);
+    Joystick.releaseButton(1);
   }
   if(!btn2) {
-    Gamepad.press(3);
+    Joystick.pressButton(2);
   } else {
-    Gamepad.release(3);
+    Joystick.releaseButton(2);
   }
   if(!btn3) {
-    Gamepad.press(4);
+    Joystick.pressButton(3);
   } else {
-    Gamepad.release(4);
+    Joystick.releaseButton(3);
   }
   if(btn4) {
-    Gamepad.press(5);
+    Joystick.pressButton(4);
   } else {
-    Gamepad.release(5);
+    Joystick.releaseButton(4);
   }if(btn5) {
-    Gamepad.press(6);
-    Gamepad.release(7);
+    Joystick.pressButton(5);
+    Joystick.releaseButton(6);
   } else {
-    Gamepad.press(7);
-    Gamepad.release(6);
+    Joystick.pressButton(6);
+    Joystick.releaseButton(5);
   }if(btn6) {
-    Gamepad.press(8);
+    Joystick.pressButton(7);
   } else {
-    Gamepad.release(8);
+    Joystick.releaseButton(7);
   }
   if(btn7) {
-    Gamepad.press(9);
-    Gamepad.release(10);
+    Joystick.pressButton(8);
+    Joystick.releaseButton(9);
   } else {
-    Gamepad.release(9);
-    Gamepad.press(10);
+    Joystick.releaseButton(8);
+    Joystick.pressButton(9);
   }
   if(btn8) {
-    Gamepad.press(11);
-    Gamepad.release(12);
+    Joystick.pressButton(10);
+    Joystick.releaseButton(11);
   } else {
-    Gamepad.release(11);
-    Gamepad.press(12);
+    Joystick.releaseButton(10);
+    Joystick.pressButton(11);
   }
   if(btn9) {
-    Gamepad.press(13);
+    Joystick.pressButton(12);
   } else {
-    Gamepad.release(13);
+    Joystick.releaseButton(12);
   }
   if(btn10) {
-    Gamepad.press(14);
-    Gamepad.release(15);
+    Joystick.pressButton(13);
+    Joystick.releaseButton(14);
   } else {
-    Gamepad.release(14);
-    Gamepad.press(15);
+    Joystick.releaseButton(13);
+    Joystick.pressButton(14);
   }
   if(btn11) {
-    Gamepad.press(16);
+    Joystick.pressButton(15);
   } else {
-    Gamepad.release(16);
+    Joystick.releaseButton(15);
   }
-  Gamepad.write();
+  //Gamepad.write();
+  Joystick.setEffectParams(myeffectparams);
+  Joystick.getForce(forces);
+  if(forces[0] > 0){
+    //digitalWrite(6,LOW);
+    //digitalWrite(7,HIGH);
+    analogWrite(9,abs(forces[0]));
+  }else{
+    //digitalWrite(6,HIGH);
+    //digitalWrite(7,LOW);
+    analogWrite(9,abs(forces[0]));
+  }
 
   delay(1);
 

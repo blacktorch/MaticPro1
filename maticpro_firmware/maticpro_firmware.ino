@@ -1,7 +1,9 @@
 #include <EEPROM.h>
+#include <SoftwareSerial.h>
 //#include "HID-Project.h"
 #include "Joystick.h"
 #include <RotaryEncoder.h>
+#include <BPLib.h>
 
 #define ROT1_IN1 6
 #define ROT1_IN2 5
@@ -15,8 +17,8 @@
 int rot1_addr = 0;
 int rot2_addr = 5;
 
-int ioSelect = 2;
-int clockPulse = 3;
+int ioSelect = 15;
+int clockPulse = 14;
 int dataOut = 4;
 int xAxis = A0;
 int yAxis = A1;
@@ -64,6 +66,8 @@ Gains mygains[2];
 EffectParams myeffectparams[2];
 int32_t forces[2] = {0};
 
+//SoftwareSerial bluetooth(10, 16); // RX, TX
+//BPLib *BPMod;
 void setup() {
   // put your setup code here, to run once:
   
@@ -72,6 +76,9 @@ void setup() {
   //enable gains REQUIRED
   Joystick.setGains(mygains);
   Joystick.begin(false);
+  //bluetooth.begin(115200);
+  //BPMod = new BPLib(bluetooth);
+  //BPMod->begin(BP_MODE_HID,BP_HID_JOYSTICK);
   pinMode(ioSelect, OUTPUT);
   pinMode(clockPulse, OUTPUT);
   pinMode(dataOut, INPUT);
@@ -223,8 +230,10 @@ void loop() {
 
   if(btn0) {
     Joystick.pressButton(0);
+    //BPMod->gameJoyPress(BP_GAMEJOY_ST_BTN0,BP_GAMEJOY_ND_NOBTN);
   } else {
     Joystick.releaseButton(0);
+    //BPMod->gameJoyPress(BP_GAMEJOY_ST_NOBTN,BP_GAMEJOY_ND_NOBTN);
   }
   if(btn1) {
     Joystick.pressButton(1);
